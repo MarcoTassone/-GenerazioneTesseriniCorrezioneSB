@@ -1,0 +1,137 @@
+Tipologia di classi all'interno di un progetto.
+-------------------------------------------------
+
+1) Classi che simulano un oggetto reale
+ad esempio licenze, tesserini, sms, email
+
+queste classi vanno create attraverso o il builder di Lombok o attraverso il costruttore
+è sconsigliato la creazione tramite i factory
+Vanno organizzate in questo modo
+
+Interfaccia -> Classe Astratta che implementa l'interfaccia -> classi concrete in cui creare il costruttore con tutti gli attributi
+usando Costruttore from Superclass
+
+Se si vuole usare il Builder, aggiungere l'annotazione @Builder non sulla classe ma su questo costruttore
+
+Le istanze delle classi concrete Vanno poi create con il new o con il builder.
+
+Esempio creazione con il new (costruttore)
+Sms smsHigh = new SmsHigh("393 2000 4555", "Messaggio da inviare");
+
+Esempio creazione con il builder (Lombok)
+Sms smsLow = SmsLow.builder().telefono("393 2000 4555").messaggio("Messaggio da inviare").build();
+
+
+2) Classi di servizio
+ad esempio Stampa , InvioSms
+
+Sono delle classi che in genere vengono create una volta e poi riutilizzate sempre in quanto hanno degli attributi
+che impostati all'inizio non cambiano nel tempo.
+
+Ad esempio un Servizio di invio posta viene configurato con l'indirizzo di posta in uscita e le credenziali 
+(user name e password) di un utente abilitato all'invio.
+
+Ad esempio entrando in un client di posta con le proprie credenziali ad ogni invio di una email 
+le credenziali non vengono più richieste e si possono inviare infinite email senza ulteriori autenticazioni
+
+Queste classi siccome hanno attributi che vengono impostati una volta per tutte oppure non ne hanno affatto o vengono passati 
+come parametri ai metodi sono classi ideali per un pattern singleton andrebbero create tramite un factory.
+
+Il singletone mi garantisce una ridotta occupazione di memoria perchè la classe viene creata una volta soltanto
+il factory mi consente di decidere diverse configurazioni di UNO STESSO OGGETTO
+
+Nel caso di un singletone il factory mi permette di ottenere diverse configurazioni da utilizzare immediatamente prima di
+una successiva richiesta al factory.
+In ambienti condivisi tipo il web non usare i singletone ma usare classi istanziate con il new
+
+3) Classi di generazione
+Ad esmpio factory, bulder
+
+
+
+1) Quando usare il factory?
+Usarlo con classi di servizio
+
+2) Quando usare il singletone
+Usarlo con classi di servizio che non abbiano diverse configurazioni
+e con le classi di generazione
+
+
+3) Quando usare oggetti istanziati con il new (costruttore) ed il builder (lombok)
+Usarlo nel caso di classi che simulano oggetti reali
+e nel caso di servizi che non possano essere creati come singletone
+
+
+--------------------------------------------
+Come definire gli oggetti
+--------------------------------------------
+1) Classi che simulano un oggetto reale
+a. Creo una classe papà di tipo astratto in cui metto gli attributi e i metodi comuni a tutti i figli
+b. Estraggo l'interfaccia tramite eclipse (ora la classe papà implementa l'interfacccia)
+c. Creo le classi concrete estendendo quella astratta e implementando i metodi 
+dell'interfaccia non ancora definiti nel papà 
+
+2) Singletone
+a. Creare un unico costruttore vuoto con visibilità private
+b. Creare un attributo  final e static dello stesso tipo della classe ed inizializzarlo con un new ClasseSingletone()
+c. Creare un metodo final static che restituisce l'attributo di cui sopra
+d. nel caso di parametri essi possone essere  passati anche attraverso i setter in un secondo momento
+e. Si consiglia l'uso del nome instance per l'attributo statico e getIstance per il metodo getter
+
+import com.acme.messaggistica.v2.sms.SmsLow;
+import com.acme.messaggistica.v2.sms.Sms;
+import com.acme.messaggistica.v2.sms.SmsHigh;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+public class ServerInvioSms {
+	private String dns;
+	private final static ServerInvioSms instance = new ServerInvioSms();	// b. istanza privata dello stesso tipo della classe
+	
+	public String getDns() { return dns; }
+	public void setDns(String dns) { this.dns = dns; } // d. serve a configurare in un secondo momento questo attributo
+
+	public final static ServerInvioSms getInstance(String dns) { //  c. restituisce l'istanza privata
+		instance.setDns(dns);
+		return instance;
+	}
+	
+	
+	public static ServerInvioSms getInstance() { // c.  versione  senza parametro
+		return instance;
+	}
+	
+	private ServerInvioSms() { // a. costruttore privato senza parametri 
+		super();
+	}
+	
+}
+
+
+3) Factory
+a. creare una classe Avente lo stesso nome delle classi da creare tramite factory ed aggiungere il suffisso Factory
+es classe  ServerInvioSms    factory relativo ServerInvioSmsFactory
+b. creare un metodo (create) che restituisca un oggetto di una certa classe,  avente perlomeno un parametro di tipo 
+String o Enum che serve a definire la configurazione dell'oggetto da restituire. 
+E' consigliato restituire oggetti dello stesso tipo in caso si volessore usare tipi diversi bisogna 
+definire un interfaccia (come ritorno) comune da utilzzare nel metodo di creazione 
+nel caso di utilizzo dell'interfaccia, qualora fossero necessari dei metodi 
+non previsti dall'interfaccia si deve fare un casting.
+
+package com.acme.messaggistica.invio;
+import com.acme.messaggistica.v2.sms.server.ServerInvioSms;
+public class ServerInvioSmsFactory {
+	public final static String TIPO_SERVER_GOOGLE = "google.service.com"; 
+	public final static String TIPO_SERVER_ACME = "server.invio.acme.com"; 
+	public static ServerInvioSms create(String tipo) {
+			return ServerInvioSms.getInstance(tipo);
+		
+	}
+	
+}
+
+List<String> nomi = new ArrayList<String>();
+nomi.add("mauro");
+
+
